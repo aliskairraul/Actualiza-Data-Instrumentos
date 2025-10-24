@@ -17,7 +17,9 @@ ayer = datetime.now(timezone.utc).date() - timedelta(days=1)
 
 logger = get_logger("Actualiza-Data")
 
-logger.info(f"este es {api_key}")
+if not api_key:
+    logger.error("API_KEY no está definida o no logro cargarla")
+    sys.exit(1)
 
 urls_twelve = {
     "BTCUSD": f"https://api.twelvedata.com/time_series?symbol=BTC/USD&interval=1day&outputsize=7&apikey={api_key}",
