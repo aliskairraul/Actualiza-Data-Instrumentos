@@ -210,7 +210,7 @@ def main():
             .pipe(lambda df: transformar(df=df, symbol=symbol))
             .pipe(lambda df: persistir(df=df, symbol=symbol))
         )
-    sys(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
