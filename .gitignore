@@ -1,0 +1,11 @@
+# 🗂️ Carpetas a excluir
+__pycache__/
+**/__pycache__/
+
+# 1) Ignorar la carpeta venv en la raíz
+venv/
+
+# 2) Ignorar archivos específicos en la raíz
+.flake8
+requirements_ojo.txt
+.env
