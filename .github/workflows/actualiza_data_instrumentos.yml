@@ -38,7 +38,10 @@ jobs:
 
       - name: Commit y push de cambios
         run: |
-          git add db/db.parquet
-          git add logs/*.log
+          git add db/btcusd-D1_2010-07-17_actualidad.parquet
+          git add db/eurusd-D1_2000-01-03_actualidad.parquet
+          git add db/sp500-D1_2000-01-03_actualidad.parquet
+          git add db/us10y-D1_2000-01-03_actualidad.parquet
+          git add db/xauusd-D1_2000-01-03_actualidad.parquet
           git commit -m "Actualización automática: $(date '+%Y-%m-%d %H:%M')" || echo "Sin cambios para commitear"
           git push
