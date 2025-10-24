@@ -17,6 +17,8 @@ ayer = datetime.now(timezone.utc).date() - timedelta(days=1)
 
 logger = get_logger("Actualiza-Data")
 
+logger.info(f"este es {api_key}")
+
 urls_twelve = {
     "BTCUSD": f"https://api.twelvedata.com/time_series?symbol=BTC/USD&interval=1day&outputsize=7&apikey={api_key}",
     "EURUSD": f"https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1day&outputsize=7&apikey={api_key}",
@@ -45,7 +47,7 @@ symbols_yfinance = {
 
 
 def redondear_ohlc(df: pl.DataFrame, decimales: int):
-    columns = [x for x in df.columns if x not in ['date', 'symbol']]
+    columns = [x for x in df.columns if x not in ["date", "symbol"]]
     for column in columns:
         df = df.with_columns(pl.col(column).round(decimals=decimales))
     return df
@@ -57,10 +59,10 @@ def extraer_yfinance(symbol: str) -> pl.DataFrame:
     symbol_api = symbols_yfinance[symbol]
     try:
         ticker = yf.Ticker(symbol_api)
-        data = ticker.history(period="5d", interval='1d')
+        data = ticker.history(period="5d", interval="1d")
         # data.index = data.index.tz_convert("UTC")
         df = pl.DataFrame(data.reset_index())
-        df = df.with_columns(pl.lit(symbol).alias('symbol'))
+        df = df.with_columns(pl.lit(symbol).alias("symbol"))
         return df
     except Exception as e:
         logger.error(f"Error comunicando con yfinance {e}")
@@ -76,9 +78,9 @@ def extraer_twelve(symbol: str) -> pl.DataFrame:
     try:
         response = requests.get(urls_twelve[symbol])
         response.raise_for_status()  # Lanza excepción si el código no es 200
-        diccionarios = response.json()['values']
+        diccionarios = response.json()["values"]
         for dicionario in diccionarios:
-            if dicionario['datetime'] == ayer_str:
+            if dicionario["datetime"] == ayer_str:
                 ohlc = {
                     "date": ayer,
                     "open": dicionario["open"],
@@ -112,27 +114,27 @@ def extraer_marketwatch(symbol: str) -> pl.DataFrame:
 
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # $x('//div[@class="column column--full j-downloaddata"]/div[1]/mw-tabs/div[2]/div[1]/mw-downloaddata/div//tbody')
+        # $x("//div[@class="column column--full j-downloaddata"]/div[1]/mw-tabs/div[2]/div[1]/mw-downloaddata/div//tbody")
         tabla = soup.select_one(
-            'div.column.column--full.j-downloaddata > div > mw-tabs > div:nth-of-type(2) > div > mw-downloaddata > div tbody'
+            "div.column.column--full.j-downloaddata > div > mw-tabs > div:nth-of-type(2) > div > mw-downloaddata > div tbody"
         )
         if not tabla:
             logger.error("No se encontró la tabla en el HTML")
             return pl.DataFrame()
 
-        filas = tabla.find_all('tr')
+        filas = tabla.find_all("tr")
         for fila in filas:
-            columnas = fila.find_all('td')
+            columnas = fila.find_all("td")
             if len(columnas) < 5:
                 continue
 
-            fecha_str = columnas[0].find('div').text
+            fecha_str = columnas[0].find("div").text
 
             if fecha_str == ayer_str:
-                open_ = columnas[1].find('div').text
-                high = columnas[2].find('div').text
-                low = columnas[3].find('div').text
-                close = columnas[4].find('div').text
+                open_ = columnas[1].find("div").text
+                high = columnas[2].find("div").text
+                low = columnas[3].find("div").text
+                close = columnas[4].find("div").text
 
                 df = pl.DataFrame([{
                     "date": ayer,
@@ -166,20 +168,20 @@ def extraer(symbol: str) -> pl.DataFrame:
 def transformar(df: pl.DataFrame, symbol: str) -> pl.DataFrame:
     if df.shape[0] == 0:
         return df
-    columns = [x for x in df.columns if x not in ['date', 'symbol']]
-    if symbol in ['BTCUSD', 'EURUSD', 'XAUUSD']:
+    columns = [x for x in df.columns if x not in ["date", "symbol"]]
+    if symbol in ["BTCUSD", "EURUSD", "XAUUSD"]:
         for column in columns:
             df = df.with_columns(pl.col(column).cast(pl.Float64))
-            if symbol == 'EURUSD':
+            if symbol == "EURUSD":
                 df = df.with_columns(pl.col(column).round(decimals=4))
         return df
 
-    if symbol in ['SPX', 'US10Y']:
-        df = df.with_columns(pl.col('Date').dt.date().alias('date'))
-        df = df.select(['date', 'Open', 'High', 'Low', 'Close', 'symbol'])
-        df.columns = ['date', 'open', 'high', 'low', 'close', 'symbol']
-        mask = df['date'] == ayer
-        if symbol == 'SPX':
+    if symbol in ["SPX", "US10Y"]:
+        df = df.with_columns(pl.col("Date").dt.date().alias("date"))
+        df = df.select(["date", "Open", "High", "Low", "Close", "symbol"])
+        df.columns = ["date", "open", "high", "low", "close", "symbol"]
+        mask = df["date"] == ayer
+        if symbol == "SPX":
             df = redondear_ohlc(df=df, decimales=2)
         return df.filter(mask)
 
@@ -192,17 +194,17 @@ def persistir(df: pl.DataFrame, symbol: str):
     if df.shape[0] == 0:
         return
     historico = pl.read_parquet(paths[symbol])
-    final = pl.concat([historico, df], how='vertical')
-    clave = 'date'
-    final = final.unique(subset=clave, keep='last').sort('date')
+    final = pl.concat([historico, df], how="vertical")
+    clave = "date"
+    final = final.unique(subset=clave, keep="last").sort("date")
     final.write_parquet(paths[symbol])
     return
 
 
 def main():
-    symbols = ['BTCUSD', 'EURUSD', 'XAUUSD', 'SPX', 'US10Y', 'USDX']
+    symbols = ["BTCUSD", "EURUSD", "XAUUSD", "SPX", "US10Y", "USDX"]
     if datetime.now(timezone.utc).date().weekday() in [0, 6]:
-        symbols = ['BTCUSD']
+        symbols = ["BTCUSD"]
 
     for symbol in symbols:
         (
