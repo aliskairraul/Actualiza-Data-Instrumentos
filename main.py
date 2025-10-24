@@ -204,7 +204,7 @@ def persistir(df: pl.DataFrame, symbol: str):
 
 
 def main():
-    symbols = ["BTCUSD", "EURUSD", "XAUUSD", "SPX", "US10Y", "USDX"]
+    symbols = ["BTCUSD", "EURUSD", "XAUUSD", "SPX", "US10Y"]
     if datetime.now(timezone.utc).date().weekday() in [0, 6]:
         symbols = ["BTCUSD"]
 
